@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI应用板块财经舆情监测大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a1a2e; color: #fff; font-family: "Microsoft YaHei", sans-serif; }
+        .header { text-align: center; padding: 20px; font-size: 28px; font-weight: bold; color: #00d4ff; }
+        .container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 0 20px 20px; }
+        .card { background: #112240; border-radius: 10px; padding: 20px; min-height: 280px; }
+        .card-title { font-size: 16px; color: #8892b0; margin-bottom: 15px; }
+        .chart { width: 100%; height: 220px; }
+        .full-width { grid-column: 1 / -1; }
+        .alert-item { background: #1a2f4a; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .alert-high { border-left: 3px solid #ff4d4f; }
+        .alert-mid { border-left: 3px solid #faad14; }
+        .alert-time { color: #8892b0; font-size: 13px; }
+        .score-big { font-size: 48px; font-weight: bold; color: #00d4ff; text-align: center; padding: 30px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">AI应用板块财经舆情监测大屏</div>
+    <div class="container">
+        <div class="card">
+            <div class="card-title">板块情绪指数</div>
+            <div class="score-big" id="sectorScore">68.5</div>
+        </div>
+        <div class="card">
+            <div class="card-title">细分主线情绪对比</div>
+            <div class="chart" id="mainLineChart"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">个股情绪排行</div>
+            <div class="chart" id="stockChart"></div>
+        </div>
+        <div class="card full-width">
+            <div class="card-title">预警记录</div>
+            <div id="alertList"></div>
+        </div>
+    </div>
+    <script>
+        // 细分主线情绪对比
+        var mainLineChart = echarts.init(document.getElementById('mainLineChart'));
+        mainLineChart.setOption({
+            tooltip: {},
+            xAxis: { type: 'category', data: ['AI Agent','AIGC','AI游戏','AI传媒'], axisLabel: {color:'#8892b0'} },
+            yAxis: { type: 'value', axisLabel: {color:'#8892b0'} },
+            series: [{ type: 'bar', data: [72.3, 75.1, 61.2, 65.4], itemStyle: {color: '#00d4ff'} }]
+        });
+
+        // 个股情绪排行
+        var stockChart = echarts.init(document.getElementById('stockChart'));
+        stockChart.setOption({
+            tooltip: {},
+            xAxis: { type: 'value', axisLabel: {color:'#8892b0'} },
+            yAxis: { type: 'category', data: ['中文在线','汤姆猫','蓝色光标','万兴科技','拓尔思'], axisLabel: {color:'#8892b0'} },
+            series: [{ type: 'bar', data: [60.2, 63.8, 71.4, 75.6, 78.2], itemStyle: {color: '#52c41a'} }]
+        });
+
+        // 预警记录
+        var alerts = [
+            {time:'2026-08-30 14:23', stock:'蓝色光标', type:'情绪突变', level:'高', desc:'负面情绪1小时内上升23%'},
+            {time:'2026-08-30 13:15', stock:'万兴科技', type:'关键词命中', level:'中', desc:"检测到'减持'相关讨论"}
+        ];
+        var alertHtml = alerts.map(a =>
+            '<div class="alert-item ' + (a.level==='高'?'alert-high':'alert-mid') + '">' +
+            '<span>' + a.stock + ' - ' + a.desc + '</span>' +
+            '<span class="alert-time">' + a.time + '</span></div>'
+        ).join('');
+        document.getElementById('alertList').innerHTML = alertHtml;
+    </script>
+</body>
+</html>

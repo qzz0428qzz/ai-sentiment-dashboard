@@ -1,0 +1,12 @@
+requests
+akshare
+transformers
+torch
+pandas
+numpy
+mysql-connector-python
+flask
+pyecharts
+matplotlib
+jieba
+apscheduler
