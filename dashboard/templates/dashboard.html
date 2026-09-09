@@ -2,74 +2,315 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI应用板块财经舆情监测大屏</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a1a2e; color: #fff; font-family: "Microsoft YaHei", sans-serif; }
-        .header { text-align: center; padding: 20px; font-size: 28px; font-weight: bold; color: #00d4ff; }
-        .container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 0 20px 20px; }
-        .card { background: #112240; border-radius: 10px; padding: 20px; min-height: 280px; }
-        .card-title { font-size: 16px; color: #8892b0; margin-bottom: 15px; }
-        .chart { width: 100%; height: 220px; }
-        .full-width { grid-column: 1 / -1; }
-        .alert-item { background: #1a2f4a; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .alert-high { border-left: 3px solid #ff4d4f; }
-        .alert-mid { border-left: 3px solid #faad14; }
-        .alert-time { color: #8892b0; font-size: 13px; }
-        .score-big { font-size: 48px; font-weight: bold; color: #00d4ff; text-align: center; padding: 30px 0; }
+        body { background: #F5F8FA; color: #333; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+
+        .header { background: linear-gradient(135deg, #01579B 0%, #0277BD 100%); color: #fff; padding: 14px 32px; display: flex; justify-content: space-between; align-items: center; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-icon { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .header-left h1 { font-size: 20px; font-weight: 600; }
+        .header-left p { font-size: 12px; color: #B3E5FC; margin-top: 2px; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .date-text { font-size: 13px; color: #E1F5FE; }
+        .update-badge { background: rgba(255,255,255,0.2); color: #4FC3F7; padding: 3px 8px; border-radius: 10px; font-size: 11px; }
+        .update-badge::before { content: "●"; margin-right: 4px; }
+
+        .time-filter { background: #fff; padding: 10px 32px; display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid #E1E8ED; }
+        .time-seg { display: inline-flex; background: #F0F4F8; border-radius: 20px; padding: 2px; }
+        .time-btn { padding: 5px 18px; border: none; background: transparent; color: #78909C; cursor: pointer; border-radius: 18px; font-size: 13px; transition: all 0.2s; }
+        .time-btn.active { background: #0288D1; color: #fff; font-weight: 600; }
+
+        .container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 16px 32px; }
+        .card { background: #fff; border-radius: 8px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .card-title { font-size: 14px; color: #333; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title .sub { font-size: 11px; color: #90A4AE; font-weight: 400; }
+        .chart { width: 100%; height: 200px; }
+        .chart-lg { width: 100%; height: 240px; }
+        .span-2 { grid-column: span 2; }
+
+        .gauge-wrap { display: flex; align-items: center; justify-content: center; height: 200px; }
+        .donut-wrap { position: relative; height: 200px; }
+
+        .word-cloud { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; padding: 8px 0; height: 200px; overflow: hidden; }
+        .word-tag { display: inline-block; padding: 4px 12px; border-radius: 14px; font-weight: 500; white-space: nowrap; }
+
+        .alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F0F4F8; }
+        .alert-item:last-child { border-bottom: none; }
+        .alert-tag { padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; white-space: nowrap; margin-top: 1px; }
+        .tag-pos { background: #E1F5FE; color: #0277BD; }
+        .tag-neu { background: #F5F5F5; color: #78909C; }
+        .tag-neg { background: #ECEFF1; color: #455A64; }
+        .alert-content { flex: 1; }
+        .alert-title { font-size: 13px; color: #333; line-height: 1.4; }
+        .alert-meta { font-size: 11px; color: #90A4AE; margin-top: 3px; }
+        .alert-stock { font-weight: 600; color: #0277BD; }
+
+        .stock-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #F0F4F8; }
+        .stock-link-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 14px; font-size: 12px; font-weight: 500; background: #E1F5FE; color: #0277BD; border: 1px solid #B3E5FC; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .stock-link-btn:hover { background: #0288D1; color: #fff; border-color: #0288D1; }
+        .stock-link-btn .score { font-size: 11px; color: #78909C; }
+        .stock-link-btn:hover .score { color: #E1F5FE; }
+
+        .footer { text-align: center; padding: 12px; color: #B0BEC5; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div class="header">AI应用板块财经舆情监测大屏</div>
-    <div class="container">
-        <div class="card">
-            <div class="card-title">板块情绪指数</div>
-            <div class="score-big" id="sectorScore">68.5</div>
+    <div class="header">
+        <div class="header-left">
+            <div class="header-icon">⚡</div>
+            <div>
+                <h1>AI应用板块财经舆情监测大屏</h1>
+                <p>市场洞察 · 舆情预警 · 个股监控</p>
+            </div>
         </div>
-        <div class="card">
-            <div class="card-title">细分主线情绪对比</div>
-            <div class="chart" id="mainLineChart"></div>
-        </div>
-        <div class="card">
-            <div class="card-title">个股情绪排行</div>
-            <div class="chart" id="stockChart"></div>
-        </div>
-        <div class="card full-width">
-            <div class="card-title">预警记录</div>
-            <div id="alertList"></div>
+        <div class="header-right">
+            <span class="date-text" id="dateNow">2026-09-09</span>
+            <span class="update-badge">数据已更新</span>
         </div>
     </div>
+
+    <div class="time-filter">
+        <div class="time-seg">
+            <button class="time-btn active" data-period="today" onclick="switchPeriod('today')">今日</button>
+            <button class="time-btn" data-period="7d" onclick="switchPeriod('7d')">近7日</button>
+            <button class="time-btn" data-period="30d" onclick="switchPeriod('30d')">近30日</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-title">板块情绪指数 <span class="sub" id="indexChange">较昨日 --</span></div>
+            <div class="gauge-wrap"><div id="gaugeChart" style="width:100%;height:200px;"></div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">正负面占比 <span class="sub">总量 <span id="totalPosts">--</span></span></div>
+            <div class="donut-wrap"><div id="donutChart" style="width:100%;height:200px;"></div></div>
+        </div>
+        <div class="card">
+            <div class="card-title">热词云</div>
+            <div id="wordCloudChart" style="width:100%;height:200px;"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">细分主线情绪对比 <span class="sub">情绪得分 0-100</span></div>
+            <div id="sectorChart" class="chart"></div>
+        </div>
+        <div class="card span-2">
+            <div class="card-title">个股情绪排行 <span class="sub">点击下方按钮查看详情</span></div>
+            <div id="stockChart" class="chart"></div>
+            <div id="stockLinks" class="stock-links"></div>
+        </div>
+        <div class="card">
+            <div class="card-title">舆情热度趋势 <span class="sub">按日统计</span></div>
+            <div id="trendChart" class="chart"></div>
+        </div>
+        <div class="card span-2">
+            <div class="card-title">重点舆情动态 <span class="sub">高热度帖子</span></div>
+            <div id="alertList" style="height:200px;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div class="footer">AI应用板块财经舆情监测大屏 · 数据来源：东方财富股吧</div>
+
     <script>
-        // 细分主线情绪对比
-        var mainLineChart = echarts.init(document.getElementById('mainLineChart'));
-        mainLineChart.setOption({
-            tooltip: {},
-            xAxis: { type: 'category', data: ['AI Agent','AIGC','AI游戏','AI传媒'], axisLabel: {color:'#8892b0'} },
-            yAxis: { type: 'value', axisLabel: {color:'#8892b0'} },
-            series: [{ type: 'bar', data: [72.3, 75.1, 61.2, 65.4], itemStyle: {color: '#00d4ff'} }]
-        });
-
-        // 个股情绪排行
+        var currentPeriod = 'today';
+        var gaugeChart = echarts.init(document.getElementById('gaugeChart'));
+        var donutChart = echarts.init(document.getElementById('donutChart'));
+        var wordCloudChart = echarts.init(document.getElementById('wordCloudChart'));
+        var sectorChart = echarts.init(document.getElementById('sectorChart'));
         var stockChart = echarts.init(document.getElementById('stockChart'));
-        stockChart.setOption({
-            tooltip: {},
-            xAxis: { type: 'value', axisLabel: {color:'#8892b0'} },
-            yAxis: { type: 'category', data: ['中文在线','汤姆猫','蓝色光标','万兴科技','拓尔思'], axisLabel: {color:'#8892b0'} },
-            series: [{ type: 'bar', data: [60.2, 63.8, 71.4, 75.6, 78.2], itemStyle: {color: '#52c41a'} }]
-        });
+        var trendChart = echarts.init(document.getElementById('trendChart'));
 
-        // 预警记录
-        var alerts = [
-            {time:'2026-08-30 14:23', stock:'蓝色光标', type:'情绪突变', level:'高', desc:'负面情绪1小时内上升23%'},
-            {time:'2026-08-30 13:15', stock:'万兴科技', type:'关键词命中', level:'中', desc:"检测到'减持'相关讨论"}
-        ];
-        var alertHtml = alerts.map(a =>
-            '<div class="alert-item ' + (a.level==='高'?'alert-high':'alert-mid') + '">' +
-            '<span>' + a.stock + ' - ' + a.desc + '</span>' +
-            '<span class="alert-time">' + a.time + '</span></div>'
-        ).join('');
-        document.getElementById('alertList').innerHTML = alertHtml;
+        function switchPeriod(period) {
+            currentPeriod = period;
+            document.querySelectorAll('.time-btn').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+            loadAllData();
+        }
+
+        function renderGauge(val, change) {
+            gaugeChart.setOption({
+                series: [{
+                    type: 'gauge', radius: '90%', startAngle: 180, endAngle: 0,
+                    min: 0, max: 100,
+                    progress: { show: true, width: 14, roundCap: true, itemStyle: { color: '#0288D1' } },
+                    axisLine: { lineStyle: { width: 14, color: [[0.3,'#78909C'],[0.5,'#26C6DA'],[1,'#0288D1']] } },
+                    pointer: { show: true, length: '55%', width: 3, itemStyle: { color: '#333' } },
+                    axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
+                    detail: { valueAnimation: true, formatter: '{value}', fontSize: 32, fontWeight: 700, color: '#0277BD', offsetCenter: [0, '30%'] },
+                    data: [{ value: val }]
+                }]
+            });
+            var changeText = change > 0 ? '较昨日 +' + change : change < 0 ? '较昨日 ' + change : '较昨日持平';
+            document.getElementById('indexChange').textContent = changeText;
+        }
+
+        function renderDonut(pos, neu, neg, total) {
+            donutChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                legend: { orient: 'vertical', right: 5, top: 'center', icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 11 } },
+                series: [{
+                    type: 'pie', radius: ['45%', '70%'], center: ['35%', '50%'],
+                    avoidLabelOverlap: false, padAngle: 2,
+                    itemStyle: { borderRadius: 4 },
+                    label: { show: true, position: 'center', formatter: '{c|'+total+'}\n{d|帖子总量}',
+                        rich: { c: { fontSize: 22, fontWeight: 700, color: '#333', lineHeight: 30 }, d: { fontSize: 11, color: '#90A4AE' } } },
+                    labelLine: { show: false },
+                    data: [
+                        { value: pos, name: '正面', itemStyle: { color: '#0288D1' } },
+                        { value: neu, name: '中性', itemStyle: { color: '#CFD8DC' } },
+                        { value: neg, name: '负面', itemStyle: { color: '#546E7A' } },
+                    ]
+                }]
+            });
+        }
+
+        function renderWordCloud(words) {
+            if (words.length === 0) {
+                document.getElementById('wordCloudChart').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:#90A4AE;font-size:13px;">暂无数据</div>';
+                return;
+            }
+            wordCloudChart.setOption({
+                tooltip: { formatter: '{b}: {c}' },
+                series: [{
+                    type: 'wordCloud', shape: 'circle',
+                    sizeRange: [12, 34], rotationRange: [-30, 30],
+                    width: '100%', height: '100%',
+                    textStyle: {
+                        fontFamily: 'Microsoft YaHei',
+                        color: function() {
+                            var colors = ['#01579B','#0288D1','#03A9F4','#29B6F6','#4FC3F7','#81D4FA','#B3E5FC','#0277BD'];
+                            return colors[Math.floor(Math.random() * colors.length)];
+                        }
+                    },
+                    data: words
+                }]
+            });
+        }
+
+        function renderSector(data) {
+            if (data.length === 0) { sectorChart.clear(); return; }
+            var colors = ['#01579B','#0288D1','#29B6F6','#81D4FA'];
+            sectorChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '8%', bottom: '3%', top: '15%', containLabel: true },
+                xAxis: { type: 'category', data: data.map(d => d.name), axisLabel: { fontSize: 10, interval: 0, rotate: 20 } },
+                yAxis: { type: 'value', max: 110, axisLabel: { fontSize: 10, formatter: function(v){ if(v<=100) return v; return ''; } }, splitLine: { lineStyle: { color: '#F0F4F8' } } },
+                series: [{
+                    type: 'bar', barWidth: '45%',
+                    data: data.map(function(d, i) {
+                        return { value: d.index, itemStyle: { color: colors[i % colors.length], borderRadius: [4,4,0,0] } };
+                    }),
+                    label: { show: true, position: 'top', fontSize: 11, fontWeight: 600, color: '#333', distance: 5 }
+                }]
+            });
+        }
+
+        function renderStocks(data) {
+            if (data.length === 0) { stockChart.clear(); document.getElementById('stockLinks').innerHTML = ''; return; }
+            var sorted = data.slice().reverse();
+            var colors = ['#81D4FA','#4FC3F7','#29B6F6','#03A9F4','#0288D1','#0277BD','#01579B'];
+            stockChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: function(params) {
+                    var idx = sorted.length - 1 - params[0].dataIndex;
+                    var d = data[idx];
+                    return d.name + ' (' + d.code + ')<br/>情绪指数: ' + d.index + '<br/>帖子数: ' + d.posts + '<br/>正面: ' + d.positive + ' / 负面: ' + d.negative;
+                }},
+                grid: { left: '3%', right: '8%', bottom: '3%', top: '3%', containLabel: true },
+                xAxis: { type: 'value', max: 100, axisLabel: { fontSize: 10 }, splitLine: { lineStyle: { color: '#F0F4F8' } } },
+                yAxis: { type: 'category', data: sorted.map(d => d.name), axisLabel: { fontSize: 12 } },
+                series: [{
+                    type: 'bar', barWidth: '55%',
+                    data: sorted.map(function(d, i) {
+                        return { value: d.index, itemStyle: { color: colors[(sorted.length-1-i) % colors.length], borderRadius: [0,4,4,0] } };
+                    }),
+                    label: { show: true, position: 'right', fontSize: 11, fontWeight: 600, color: '#333' }
+                }]
+            });
+
+            // Generate clickable stock buttons
+            var linksHtml = data.map(function(d) {
+                return '<a class="stock-link-btn" href="/stock/' + d.code + '?period=' + currentPeriod + '">' +
+                    d.name + ' <span class="score">' + d.index + '</span></a>';
+            }).join('');
+            document.getElementById('stockLinks').innerHTML = linksHtml;
+        }
+
+        function renderTrend(dates, sentiment, posts) {
+            if (dates.length === 0) { trendChart.clear(); return; }
+            trendChart.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['情绪指数','帖子数量'], top: 0, left: 'center', textStyle: { fontSize: 10 }, itemWidth: 12, itemHeight: 8 },
+                grid: { left: '3%', right: '4%', bottom: '8%', top: '15%', containLabel: true },
+                xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 9, rotate: 30 } },
+                yAxis: [
+                    { type: 'value', max: 100, axisLabel: { fontSize: 9 }, splitLine: { lineStyle: { color: '#F0F4F8' } } },
+                    { type: 'value', axisLabel: { fontSize: 9 } }
+                ],
+                series: [
+                    { name: '情绪指数', type: 'line', smooth: true, yAxisIndex: 0, data: sentiment, itemStyle: { color: '#0288D1' },
+                      areaStyle: { color: { type: 'linear', x:0,y:0,x2:0,y2:1, colorStops: [{offset:0,color:'rgba(2,136,209,0.2)'},{offset:1,color:'rgba(2,136,209,0.01)'}] } }, lineStyle: { width: 2 } },
+                    { name: '帖子数量', type: 'bar', yAxisIndex: 1, data: posts, itemStyle: { color: 'rgba(79,195,247,0.3)' } }
+                ]
+            });
+        }
+
+        function renderAlerts(alerts) {
+            if (alerts.length === 0) {
+                document.getElementById('alertList').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:#90A4AE;font-size:13px;">暂无数据</div>';
+                return;
+            }
+            var html = alerts.map(function(a) {
+                var tagClass = a.sentiment === '正面' ? 'tag-pos' : a.sentiment === '负面' ? 'tag-neg' : 'tag-neu';
+                return '<div class="alert-item">' +
+                    '<span class="alert-tag ' + tagClass + '">' + a.sentiment + '</span>' +
+                    '<div class="alert-content">' +
+                        '<div class="alert-title"><span class="alert-stock">' + a.stock + '</span> ' + a.title + '</div>' +
+                        '<div class="alert-meta">' + a.time + (a.reads ? ' · 阅读 ' + a.reads.toLocaleString() : '') + '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            document.getElementById('alertList').innerHTML = html;
+        }
+
+        function loadAllData() {
+            var p = currentPeriod;
+            Promise.all([
+                fetch('/api/overview?period=' + p).then(r => r.json()),
+                fetch('/api/sector_sentiment?period=' + p).then(r => r.json()),
+                fetch('/api/stock_ranking?period=' + p).then(r => r.json()),
+                fetch('/api/hot_words?period=' + p).then(r => r.json()),
+                fetch('/api/trend?period=' + p).then(r => r.json()),
+                fetch('/api/alerts?period=' + p).then(r => r.json()),
+                fetch('/api/wordcloud_data?period=' + p).then(r => r.json())
+            ]).then(function(res) {
+                var overview=res[0], sectors=res[1], stocks=res[2], hotWords=res[3], trend=res[4], alerts=res[5], wc=res[6];
+
+                document.getElementById('totalPosts').textContent = overview.total_posts.toLocaleString();
+
+                renderGauge(overview.sentiment_index, overview.index_change);
+                renderDonut(overview.positive_count, overview.neutral_count, overview.negative_count, overview.total_posts);
+                renderSector(sectors);
+                renderStocks(stocks);
+                renderTrend(trend.dates, trend.sentiment, trend.posts);
+                renderAlerts(alerts);
+
+                var wcData = wc.map(function(d) { return { name: d.name, value: d.value }; });
+                renderWordCloud(wcData);
+            });
+        }
+
+        loadAllData();
+
+        window.addEventListener('resize', function() {
+            gaugeChart.resize(); donutChart.resize(); wordCloudChart.resize();
+            sectorChart.resize(); stockChart.resize(); trendChart.resize();
+        });
     </script>
 </body>
 </html>

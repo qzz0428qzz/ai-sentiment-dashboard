@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local temp files
+tmp/
+temp/
+*.tmp
+
+# Thesis documents (kept in local only)
+docs/*.docx
+docs/*.pdf
+
+# Note: keep docs/figs/ and figures/ for images
