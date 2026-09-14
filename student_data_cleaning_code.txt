@@ -1,211 +1,86 @@
-# ============================================================
-# Student Data Cleaning — 完整代码整理
-# 来源: student_data_cleaning.ipynb (整合版数据清洗)
-# ============================================================
-
-# ----- Cell 3 -----
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', 160)
-print('pandas:', pd.__version__)
-
-# ----- Cell 5 -----
 DATA_FILE = Path('/workspace/.uploads/23091186-5ec3-4346-9498-dc542bc22971_student_data_messy.csv')
 
 df = pd.read_csv(DATA_FILE)
-print('Shape / 形状:', df.shape)
-print('Duplicate rows / 重复行:', df.duplicated().sum())
-print('Missing cells / 缺失单元格:', int(df.isna().sum().sum()))
-df.head()
-
-# ----- Cell 7 -----
-df.info()
-
-# ----- Cell 8 -----
-df.describe(include='all').T
-
-# ----- Cell 10 -----
 clean = df.copy()
-print('Raw shape / 原始形状:', df.shape)
 
-# ----- Cell 12 -----
-clean.columns = (
-    clean.columns
-         .str.strip()
-         .str.lower()
-         .str.replace(' ', '_', regex=False)
-)
-clean.columns.tolist()
+# 列名规范化
+clean.columns = clean.columns.str.strip().str.lower().str.replace(' ', '_', regex=False)
 
-# ----- Cell 14 -----
-missing_markers = ['', ' ', 'NA', 'N/A', 'na', 'n/a', '?', 'missing', 'Missing']
-clean = clean.replace(missing_markers, np.nan)
-clean.isna().sum().sort_values(ascending=False)
+# 缺失值符号统一
+clean = clean.replace(['', ' ', 'NA', 'N/A', 'na', 'n/a', '?', 'missing', 'Missing'], np.nan)
 
-# ----- Cell 16 -----
-text_cols = clean.select_dtypes(include=['object', 'string']).columns
-for col in text_cols:
+# 文本去首尾空格
+for col in clean.select_dtypes(include=['object', 'string']).columns:
     clean[col] = clean[col].astype('string').str.strip()
-clean[['name', 'gender', 'major', 'email', 'city']].head(8)
 
-# ----- Cell 18 -----
-gender_map = {'m': 'Male', 'male': 'Male', 'f': 'Female', 'female': 'Female'}
-clean['gender'] = clean['gender'].str.lower().map(gender_map)
-clean['gender'].value_counts(dropna=False)
+# 统一性别
+clean['gender'] = clean['gender'].str.lower().map({'m': 'Male', 'male': 'Male', 'f': 'Female', 'female': 'Female'})
 
-# ----- Cell 20 -----
+# 统一专业
 major_key = clean['major'].str.lower().str.replace('.', '', regex=False)
-major_map = {
-    'cs': 'Computer Science',
-    'computer science': 'Computer Science',
-    'ai': 'Artificial Intelligence',
-    'artificial intelligence': 'Artificial Intelligence',
+clean['major'] = major_key.map({
+    'cs': 'Computer Science', 'computer science': 'Computer Science',
+    'ai': 'Artificial Intelligence', 'artificial intelligence': 'Artificial Intelligence',
     'data science': 'Data Science',
-}
-clean['major'] = major_key.map(major_map)
-clean['major'].value_counts(dropna=False)
+})
 
-# ----- Cell 22 -----
+# 统一城市大小写
 clean['city'] = clean['city'].str.title()
-clean['city'].value_counts(dropna=False)
 
-# ----- Cell 24 -----
-numeric_cols = ['age', 'attendance_pct', 'homework', 'presentation',
-                'project', 'height_cm', 'weight_kg']
+# 数值列转换
+numeric_cols = ['age', 'attendance_pct', 'homework', 'presentation', 'project', 'height_cm', 'weight_kg']
 for col in numeric_cols:
     clean[col] = pd.to_numeric(clean[col], errors='coerce')
-clean[numeric_cols].dtypes
 
-# ----- Cell 26 -----
-rules = {
-    'age': (16, 80),
-    'attendance_pct': (0, 100),
-    'homework': (0, 20),
-    'presentation': (0, 20),
-    'project': (0, 50),
-    'height_cm': (130, 220),
-    'weight_kg': (35, 200),
+# 数值范围校验，超出置为缺失
+ranges = {
+    'age': (16, 80), 'attendance_pct': (0, 100), 'homework': (0, 20),
+    'presentation': (0, 20), 'project': (0, 50), 'height_cm': (130, 220), 'weight_kg': (35, 200),
 }
-for col, (low, high) in rules.items():
-    invalid = ~clean[col].between(low, high) & clean[col].notna()
-    if invalid.any():
-        print(f'{col}: invalid values / 无效值 ->', clean.loc[invalid, col].tolist())
-
-# ----- Cell 28 -----
-for col, (low, high) in rules.items():
+for col, (low, high) in ranges.items():
     clean.loc[~clean[col].between(low, high), col] = np.nan
-clean[numeric_cols].isna().sum()
 
-# ----- Cell 30 -----
-clean['enrollment_date'] = pd.to_datetime(
-    clean['enrollment_date'], errors='coerce', format='mixed'
-)
-print('Invalid/missing dates / 无效或缺失日期:')
-clean.loc[clean['enrollment_date'].isna(), ['student_id', 'name', 'enrollment_date']]
+# 日期解析
+clean['enrollment_date'] = pd.to_datetime(clean['enrollment_date'], errors='coerce', format='mixed')
 
-# ----- Cell 32 -----
-print('Duplicates before / 删除前重复行:', clean.duplicated().sum())
+# 删除重复行
 clean = clean.drop_duplicates().reset_index(drop=True)
-print('Shape after / 删除后形状:', clean.shape)
 
-# ----- Cell 34 -----
-# 数值列用中位数填充
-num_imputer = SimpleImputer(strategy='median')
-clean[numeric_cols] = num_imputer.fit_transform(clean[numeric_cols])
-
-# 类别列用众数填充
+# 缺失值填充（数值用中位数，类别用众数）
+clean[numeric_cols] = SimpleImputer(strategy='median').fit_transform(clean[numeric_cols])
 for col in ['gender', 'major', 'city']:
-    mode_value = clean[col].mode(dropna=True)[0]
-    clean[col] = clean[col].fillna(mode_value)
-    print(f'{col}: mode / 众数 = {mode_value}')
+    clean[col] = clean[col].fillna(clean[col].mode(dropna=True)[0])
 
-clean.isna().sum().sort_values(ascending=False)
-
-# ----- Cell 36 -----
-def iqr_outlier_mask(series, factor=1.5):
-    q1 = series.quantile(0.25)
-    q3 = series.quantile(0.75)
-    iqr = q3 - q1
-    lower = q1 - factor * iqr
-    upper = q3 + factor * iqr
-    mask = (series < lower) | (series > upper)
-    return mask, lower, upper
-
-mask, lower, upper = iqr_outlier_mask(clean['weight_kg'])
-print(f'Weight IQR limits / 体重 IQR 范围: [{lower:.2f}, {upper:.2f}]')
-if mask.any():
-    print(f'Detected {mask.sum()} potential outliers / 检测到潜在异常值:')
-    print(clean.loc[mask, ['student_id', 'name', 'weight_kg']])
-else:
-    print('No outliers detected / 未检测到异常值')
-
-# ----- Cell 38 -----
+# 邮箱清理与有效性
 clean['email'] = clean['email'].str.strip().str.lower()
 clean['email_valid'] = clean['email'].str.contains('@', na=False)
-clean[['email', 'email_valid']].head(10)
 
-# ----- Cell 40 -----
+# 类型调整
 clean['age'] = clean['age'].round().astype('Int64')
 for col in ['gender', 'major', 'city']:
     clean[col] = clean[col].astype('category')
-clean.dtypes
 
-# ----- Cell 43 -----
-scaler = StandardScaler()
-scale_cols = ['attendance_pct', 'homework', 'presentation',
-              'project', 'height_cm', 'weight_kg']
+# 数值标准化
+scale_cols = ['attendance_pct', 'homework', 'presentation', 'project', 'height_cm', 'weight_kg']
 scaled = pd.DataFrame(
-    scaler.fit_transform(clean[scale_cols]),
-    columns=[f'{c}_scaled' for c in scale_cols],
-    index=clean.index
+    StandardScaler().fit_transform(clean[scale_cols]),
+    columns=[f'{c}_scaled' for c in scale_cols], index=clean.index,
 )
 clean = pd.concat([clean, scaled], axis=1)
-clean[[f'{c}_scaled' for c in scale_cols]].head()
 
-# ----- Cell 45 -----
+# 独热编码（city）
 clean = pd.get_dummies(clean, columns=['city'], prefix='city', dtype=int)
-clean.filter(like='city_').head()
 
-# ----- Cell 47 -----
-le_gender = LabelEncoder()
-clean['gender_encoded'] = le_gender.fit_transform(clean['gender'])
-print('gender mapping / 性别映射:', dict(zip(le_gender.classes_, range(len(le_gender.classes_)))))
+# 标签编码（gender, major）
+clean['gender_encoded'] = LabelEncoder().fit_transform(clean['gender'])
+clean['major_encoded'] = LabelEncoder().fit_transform(clean['major'])
 
-le_major = LabelEncoder()
-clean['major_encoded'] = le_major.fit_transform(clean['major'])
-print('major mapping / 专业映射:', dict(zip(le_major.classes_, range(len(le_major.classes_)))))
-
-# ----- Cell 49 -----
-print('Final shape / 最终形状:', clean.shape)
-print('Duplicates / 重复行:', clean.duplicated().sum())
-print('Missing cells / 缺失单元格:', int(clean.isna().sum().sum()))
-
-# ----- Cell 50 -----
-checks = {
-    'age_valid': clean['age'].between(16, 80).all(),
-    'attendance_valid': clean['attendance_pct'].between(0, 100).all(),
-    'homework_valid': clean['homework'].between(0, 20).all(),
-    'presentation_valid': clean['presentation'].between(0, 20).all(),
-    'project_valid': clean['project'].between(0, 50).all(),
-    'height_valid': clean['height_cm'].between(130, 220).all(),
-    'weight_valid': clean['weight_kg'].between(35, 200).all(),
-}
-checks
-
-# ----- Cell 51 -----
-clean.head(10)
-
-# ----- Cell 53 -----
-OUTPUT_CSV = Path('/workspace/student_data_cleaned.csv')
-OUTPUT_EXCEL = Path('/workspace/student_data_cleaned.xlsx')
-
-clean.to_csv(OUTPUT_CSV, index=False)
-clean.to_excel(OUTPUT_EXCEL, index=False)
-
-print('Saved / 已保存:', OUTPUT_CSV.resolve())
-print('Saved / 已保存:', OUTPUT_EXCEL.resolve())
+# 保存结果
+clean.to_csv('/workspace/student_data_cleaned.csv', index=False)
+clean.to_excel('/workspace/student_data_cleaned.xlsx', index=False)
