@@ -1,0 +1,32 @@
+Student_ID,Name,Age,Gender,Major,Attendance_pct,Homework,Presentation,Project,Enrollment_Date,Email,City,Height_cm,Weight_kg
+1001,  Ali Khan ,20,Male,Computer Science,92,18,17,43,2026-02-15, ali@example.com ,Wuhan,173,65
+1002,Sara Li,19,F,computer science,88,19,18,45,15/02/2026,sara.li@example.com,Wuhan,165,52
+1003,Zhang Wei,21,male,AI,95,20,19,48,2026/02/16,zhang.wei@example.com,Huangshi,178,70
+1004,Fatima Noor,20,Female,Artificial Intelligence,,16,17,40,"Feb 17, 2026",fatima.noor@example.com,Huangshi,160,50
+1005, Chen Yu,twenty,M,CS,76,15,15,38,2026-02-18,chen.yu@example.com,wuhan,181,75
+1006,Bilal Ahmad,22,MALE,Data Science,105,18,16,44,2026-02-18,bilal@example.com,Wuhan,176,72
+1007,Liu Mei,19,female,data science,83,N/A,18,42,18-02-2026,liu.mei@example.com,Huangshi,158,47
+1008,Ayesha Malik,20,F ,AI ,91,20,20,49,2026-02-19,ayesha@example.com,Huangshi,164,55
+1009,Wang Jun,150,M,Computer Science,72,14,15,35,2026-02-19,wang.jun@example.com,Wuhan,175,68
+1010,Hassan Raza,21,Male,Data Science,68,13,14,33,2026-02-20, hassan@example.com,Huangshi,172,80
+1011,Li Na,20,,Artificial Intelligence,89,19,19,46,2026-02-20,lina@example.com,Wuhan,162,51
+1012,Omar Farooq,-3,M,CS,84,17,16,41,2026-02-21,omar@example.com,Wuhan,180,78
+1013,Zhou Min,22,Female,Data Science,87,18,17,44,2026-02-21,zhou.min@example.com,Huangshi,166,54
+1014,Hina Shah,21,female,AI,90,19,18,47,21/02/2026,hina@example.com,Huangshi,163,53
+1015,Wu Tao,20,Male,computer science,81,16,15,39,2026-02-22,wutao@example.com,Wuhan,250,73
+1016,Noor Ahmed,19,F,Data Science,78,15,14,37,2026-02-22,noor@example.com,Huangshi,167,NA
+1017,Sun Lei,21,M,A.I.,94,20,19,48,2026-02-23,sun.lei@example.com,Wuhan,179,69
+1018,Maryam Ali,20,Female,Computer Science,85,17,18,43,2026-02-23,maryam@example.com,Wuhan,161,50
+1019,Xu Chen,22,m,Data Science,79,16,16,40,2026-02-24,xu.chen@example.com,Huangshi,174,66
+1020,Ahmed Saeed,21,Male,AI,82,-5,15,41,2026-02-24,ahmed.saeed@example.com,Huangshi,177,71
+1021,Lin Fang,19,Female,CS,93,19,20,49,bad_date,lin.fang@example.com,Wuhan,159,48
+1022,Usman Tariq,20,M,Data Science,86,18,17,44,2026-02-25,usman@example.com,Wuhan,171,67
+1023,Gao Rui,21,female,Artificial Intelligence,88,18,18,45,2026-02-25,gao.rui@example.com,Huangshi,168,56
+1024,Sana Iqbal,20,F, computer science ,90,19,19,47,2026-02-26,sana@example.com,Huangshi,164,54
+1025,Ma Long,22,Male,Data Science,74,14,,36,2026-02-26,ma.long@example.com,Wuhan,182,82
+1026,Iqra Khan,21,Female,AI,96,20,20,50,2026-02-27,iqra@example.com,Wuhan,166,57
+1027,He Ping,20,M,CS,80,16,16,39,2026-02-27,he.ping@example.com,Huangshi,170,64
+1028,Zara Mahmood,19,F,Data Science,85,17,18,43,2026-02-28,zara@example.com,Huangshi,165,53
+1029,Tang Jie,21,Male,AI,89,18,19,46,2026-02-28,tang.jie@example.com,Wuhan,176,70
+1030,Amna Yousaf,20,Female,Computer Science,91,19,18,46,2026-03-01,amna@example.com,Wuhan,163,52
+1030,Amna Yousaf,20,Female,Computer Science,91,19,18,46,2026-03-01,amna@example.com,Wuhan,163,52
