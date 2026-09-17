@@ -1,86 +1,74 @@
 import pandas as pd
 import numpy as np
-from pathlib import Path
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
-DATA_FILE = Path('/workspace/.uploads/23091186-5ec3-4346-9498-dc542bc22971_student_data_messy.csv')
+data = pd.read_csv('/workspace/.uploads/23091186-5ec3-4346-9498-dc542bc22971_student_data_messy.csv')
 
-df = pd.read_csv(DATA_FILE)
-clean = df.copy()
+#列名规范化
+data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_', regex=False)
 
-# 列名规范化
-clean.columns = clean.columns.str.strip().str.lower().str.replace(' ', '_', regex=False)
+#统一缺失值符号
+data = data.replace(['', 'NA', 'N/A', '?', 'missing'], np.nan)
 
-# 缺失值符号统一
-clean = clean.replace(['', ' ', 'NA', 'N/A', 'na', 'n/a', '?', 'missing', 'Missing'], np.nan)
+#统一性别
+data['gender'] = data['gender'].str.lower().map({'m':'Male','male':'Male','f':'Female','female':'Female'})
 
-# 文本去首尾空格
-for col in clean.select_dtypes(include=['object', 'string']).columns:
-    clean[col] = clean[col].astype('string').str.strip()
+#统一专业
+data['major'] = data['major'].str.lower().str.replace('.','').map({'cs':'Computer Science','computer science':'Computer Science','ai':'Artificial Intelligence','artificial intelligence':'Artificial Intelligence','data science':'Data Science'})
 
-# 统一性别
-clean['gender'] = clean['gender'].str.lower().map({'m': 'Male', 'male': 'Male', 'f': 'Female', 'female': 'Female'})
+#统一城市
+data['city'] = data['city'].str.title()
 
-# 统一专业
-major_key = clean['major'].str.lower().str.replace('.', '', regex=False)
-clean['major'] = major_key.map({
-    'cs': 'Computer Science', 'computer science': 'Computer Science',
-    'ai': 'Artificial Intelligence', 'artificial intelligence': 'Artificial Intelligence',
-    'data science': 'Data Science',
-})
+#数值转换
+for col in ['age','attendance_pct','homework','presentation','project','height_cm','weight_kg']:
+    data[col] = pd.to_numeric(data[col], errors='coerce')
 
-# 统一城市大小写
-clean['city'] = clean['city'].str.title()
+#范围校验，超出置缺失
+data.loc[~data['age'].between(16,80), 'age'] = np.nan
+data.loc[~data['attendance_pct'].between(0,100), 'attendance_pct'] = np.nan
+data.loc[~data['homework'].between(0,20), 'homework'] = np.nan
+data.loc[~data['height_cm'].between(130,220), 'height_cm'] = np.nan
+data.loc[~data['weight_kg'].between(35,200), 'weight_kg'] = np.nan
 
-# 数值列转换
-numeric_cols = ['age', 'attendance_pct', 'homework', 'presentation', 'project', 'height_cm', 'weight_kg']
-for col in numeric_cols:
-    clean[col] = pd.to_numeric(clean[col], errors='coerce')
+#日期解析
+data['enrollment_date'] = pd.to_datetime(data['enrollment_date'], errors='coerce')
 
-# 数值范围校验，超出置为缺失
-ranges = {
-    'age': (16, 80), 'attendance_pct': (0, 100), 'homework': (0, 20),
-    'presentation': (0, 20), 'project': (0, 50), 'height_cm': (130, 220), 'weight_kg': (35, 200),
-}
-for col, (low, high) in ranges.items():
-    clean.loc[~clean[col].between(low, high), col] = np.nan
+#处理缺失值
+data['age'].fillna(data['age'].median(), inplace=True)
+data['height_cm'].fillna(data['height_cm'].median(), inplace=True)
+data['weight_kg'].fillna(data['weight_kg'].median(), inplace=True)
+data['gender'].fillna(data['gender'].mode()[0], inplace=True)
+data['major'].fillna(data['major'].mode()[0], inplace=True)
+data['city'].fillna(data['city'].mode()[0], inplace=True)
 
-# 日期解析
-clean['enrollment_date'] = pd.to_datetime(clean['enrollment_date'], errors='coerce', format='mixed')
+#删除重复
+data = data.drop_duplicates()
 
-# 删除重复行
-clean = clean.drop_duplicates().reset_index(drop=True)
+#箱线图
+import seaborn as sns
+import matplotlib.pyplot as plt
+sns.boxplot(x=data['age'])
+plt.show()
+data = data[data['age'] <= 80]
 
-# 缺失值填充（数值用中位数，类别用众数）
-clean[numeric_cols] = SimpleImputer(strategy='median').fit_transform(clean[numeric_cols])
-for col in ['gender', 'major', 'city']:
-    clean[col] = clean[col].fillna(clean[col].mode(dropna=True)[0])
+#邮箱清理
+data['email'] = data['email'].str.strip().str.lower()
+data['email_valid'] = data['email'].str.contains('@', na=False)
 
-# 邮箱清理与有效性
-clean['email'] = clean['email'].str.strip().str.lower()
-clean['email_valid'] = clean['email'].str.contains('@', na=False)
+#统一格式
+for col in ['gender','major','city']:
+    data[col] = data[col].astype('category')
 
-# 类型调整
-clean['age'] = clean['age'].round().astype('Int64')
-for col in ['gender', 'major', 'city']:
-    clean[col] = clean[col].astype('category')
+#编码
+data = pd.get_dummies(data, columns=['city'], prefix='city')
+le = LabelEncoder()
+data['gender_encoded'] = le.fit_transform(data['gender'])
+data['major_encoded'] = le.fit_transform(data['major'])
 
-# 数值标准化
-scale_cols = ['attendance_pct', 'homework', 'presentation', 'project', 'height_cm', 'weight_kg']
-scaled = pd.DataFrame(
-    StandardScaler().fit_transform(clean[scale_cols]),
-    columns=[f'{c}_scaled' for c in scale_cols], index=clean.index,
-)
-clean = pd.concat([clean, scaled], axis=1)
+#数值缩放
+scaler = StandardScaler()
+data['age_scaled'] = scaler.fit_transform(data[['age']])
 
-# 独热编码（city）
-clean = pd.get_dummies(clean, columns=['city'], prefix='city', dtype=int)
-
-# 标签编码（gender, major）
-clean['gender_encoded'] = LabelEncoder().fit_transform(clean['gender'])
-clean['major_encoded'] = LabelEncoder().fit_transform(clean['major'])
-
-# 保存结果
-clean.to_csv('/workspace/student_data_cleaned.csv', index=False)
-clean.to_excel('/workspace/student_data_cleaned.xlsx', index=False)
+print("处理后的数据：")
+print(data.head())
