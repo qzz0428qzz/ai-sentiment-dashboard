@@ -5,34 +5,9 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 data = pd.read_csv('/workspace/.uploads/23091186-5ec3-4346-9498-dc542bc22971_student_data_messy.csv')
 
-#列名规范化
-data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_', regex=False)
-
-#统一缺失值符号
-data = data.replace(['', 'NA', 'N/A', '?', 'missing'], np.nan)
-
-#统一性别
-data['gender'] = data['gender'].str.lower().map({'m':'Male','male':'Male','f':'Female','female':'Female'})
-
-#统一专业
-data['major'] = data['major'].str.lower().str.replace('.','').map({'cs':'Computer Science','computer science':'Computer Science','ai':'Artificial Intelligence','artificial intelligence':'Artificial Intelligence','data science':'Data Science'})
-
-#统一城市
-data['city'] = data['city'].str.title()
-
 #数值转换
 for col in ['age','attendance_pct','homework','presentation','project','height_cm','weight_kg']:
     data[col] = pd.to_numeric(data[col], errors='coerce')
-
-#范围校验，超出置缺失
-data.loc[~data['age'].between(16,80), 'age'] = np.nan
-data.loc[~data['attendance_pct'].between(0,100), 'attendance_pct'] = np.nan
-data.loc[~data['homework'].between(0,20), 'homework'] = np.nan
-data.loc[~data['height_cm'].between(130,220), 'height_cm'] = np.nan
-data.loc[~data['weight_kg'].between(35,200), 'weight_kg'] = np.nan
-
-#日期解析
-data['enrollment_date'] = pd.to_datetime(data['enrollment_date'], errors='coerce')
 
 #处理缺失值
 data['age'].fillna(data['age'].median(), inplace=True)
@@ -45,26 +20,14 @@ data['city'].fillna(data['city'].mode()[0], inplace=True)
 #删除重复
 data = data.drop_duplicates()
 
-#箱线图
-import seaborn as sns
-import matplotlib.pyplot as plt
-sns.boxplot(x=data['age'])
-plt.show()
-data = data[data['age'] <= 80]
-
-#邮箱清理
-data['email'] = data['email'].str.strip().str.lower()
-data['email_valid'] = data['email'].str.contains('@', na=False)
-
 #统一格式
-for col in ['gender','major','city']:
-    data[col] = data[col].astype('category')
+data['gender'] = data['gender'].str.lower().map({'m':'Male','male':'Male','f':'Female','female':'Female'})
+data['city'] = data['city'].str.title()
 
 #编码
 data = pd.get_dummies(data, columns=['city'], prefix='city')
 le = LabelEncoder()
 data['gender_encoded'] = le.fit_transform(data['gender'])
-data['major_encoded'] = le.fit_transform(data['major'])
 
 #数值缩放
 scaler = StandardScaler()
